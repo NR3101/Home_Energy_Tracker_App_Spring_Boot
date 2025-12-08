@@ -8,6 +8,7 @@ A microservice-based application for tracking home energy usage.
 ## Architecture
 This is a microservices architecture project consisting of:
 - **user-service**: User management service
+- **device-service**: Device management service
 
 ## Tech Stack
 - Java 25
@@ -32,6 +33,13 @@ This is a microservices architecture project consisting of:
 │   │   │   └── resources/
 │   │   └── test/
 │   └── pom.xml
+├── device-service/        # Device management microservice
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/
+│   │   │   └── resources/
+│   │   └── test/
+│   └── pom.xml
 └── docker-compose.yml     # Docker Compose configuration
 ```
 
@@ -46,6 +54,14 @@ Handles user management operations including:
 
 **Port**: TBD
 
+### Device Service
+Handles device management operations including:
+- Device registration
+- Device profile management (name, type, location)
+- Device association with users
+
+**Port**: 8081
+
 ## Getting Started
 
 ### Prerequisites
@@ -58,9 +74,17 @@ Handles user management operations including:
 docker-compose up -d
 ```
 
-### Running User Service Locally
+### Running Services Locally
+
+**User Service:**
 ```bash
 cd user-service
+./mvnw spring-boot:run
+```
+
+**Device Service:**
+```bash
+cd device-service
 ./mvnw spring-boot:run
 ```
 
@@ -70,14 +94,30 @@ Database migrations are handled automatically by Flyway on application startup.
 ## Development
 
 ### Building the Project
+
+**User Service:**
 ```bash
 cd user-service
 ./mvnw clean install
 ```
 
+**Device Service:**
+```bash
+cd device-service
+./mvnw clean install
+```
+
 ### Running Tests
+
+**User Service:**
 ```bash
 cd user-service
+./mvnw test
+```
+
+**Device Service:**
+```bash
+cd device-service
 ./mvnw test
 ```
 
