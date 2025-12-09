@@ -9,6 +9,7 @@ A microservice-based application for tracking home energy usage.
 This is a microservices architecture project consisting of:
 - **user-service**: User management service
 - **device-service**: Device management service
+- **ingestion-service**: Energy usage data ingestion service
 
 ## Tech Stack
 - Java 25
@@ -16,6 +17,7 @@ This is a microservices architecture project consisting of:
 - Spring Data JPA
 - Flyway (Database Migration)
 - MySQL
+- Apache Kafka
 - Docker & Docker Compose
 - Maven
 - Lombok
@@ -25,7 +27,8 @@ This is a microservices architecture project consisting of:
 ```
 .
 ├── docker/                 # Docker configuration files
-│   └── mysql/             # MySQL initialization scripts
+│   ├── mysql/             # MySQL initialization scripts
+│   └── kafka_data/        # Kafka data storage
 ├── user-service/          # User management microservice
 │   ├── src/
 │   │   ├── main/
@@ -34,6 +37,13 @@ This is a microservices architecture project consisting of:
 │   │   └── test/
 │   └── pom.xml
 ├── device-service/        # Device management microservice
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/
+│   │   │   └── resources/
+│   │   └── test/
+│   └── pom.xml
+├── ingestion-service/     # Energy data ingestion microservice
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/
@@ -62,6 +72,14 @@ Handles device management operations including:
 
 **Port**: 8081
 
+### Ingestion Service
+Handles energy usage data ingestion operations including:
+- Energy usage data ingestion via REST API
+- Data publishing to Kafka
+- Parallel data simulation for testing
+
+**Port**: 8082
+
 ## Getting Started
 
 ### Prerequisites
@@ -88,6 +106,12 @@ cd device-service
 ./mvnw spring-boot:run
 ```
 
+**Ingestion Service:**
+```bash
+cd ingestion-service
+./mvnw spring-boot:run
+```
+
 ### Database Migrations
 Database migrations are handled automatically by Flyway on application startup.
 
@@ -107,6 +131,12 @@ cd device-service
 ./mvnw clean install
 ```
 
+**Ingestion Service:**
+```bash
+cd ingestion-service
+./mvnw clean install
+```
+
 ### Running Tests
 
 **User Service:**
@@ -118,6 +148,12 @@ cd user-service
 **Device Service:**
 ```bash
 cd device-service
+./mvnw test
+```
+
+**Ingestion Service:**
+```bash
+cd ingestion-service
 ./mvnw test
 ```
 

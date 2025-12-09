@@ -96,6 +96,9 @@ application-dev.properties
 *.db
 *.sqlite
 
+# Kafka
+docker/kafka_data/
+
 # Environment variables
 .env
 .env.local
