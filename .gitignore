@@ -99,6 +99,9 @@ application-dev.properties
 # Kafka
 docker/kafka_data/
 
+# InfluxDB
+influxdb_data/
+
 # Environment variables
 .env
 .env.local

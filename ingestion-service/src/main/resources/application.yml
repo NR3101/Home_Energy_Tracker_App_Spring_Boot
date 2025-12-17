@@ -12,8 +12,8 @@ spring:
 
 simulation:
   fixedDelay: 5000
-  requests-per-interval: 1500
-  parallel-threads: 8
+  requests-per-interval: 800
+  parallel-threads: 6
   endpoint: http://localhost:8082/api/v1/ingestion
 
 
