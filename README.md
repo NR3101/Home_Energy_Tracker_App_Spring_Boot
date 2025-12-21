@@ -11,11 +11,13 @@ This is a microservices architecture project consisting of:
 - **device-service**: Device management service
 - **ingestion-service**: Energy usage data ingestion service
 - **usage-service**: Energy usage monitoring and alerting service
+- **alert-service**: Alert notification service
 
 ## Tech Stack
 - Java 25
 - Spring Boot 4.0.0
 - Spring Data JPA
+- Spring Mail
 - Flyway (Database Migration)
 - MySQL
 - Apache Kafka
@@ -53,6 +55,13 @@ This is a microservices architecture project consisting of:
 │   │   └── test/
 │   └── pom.xml
 ├── usage-service/         # Energy usage monitoring and alerting microservice
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/
+│   │   │   └── resources/
+│   │   └── test/
+│   └── pom.xml
+├── alert-service/         # Alert notification microservice
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/
@@ -99,6 +108,14 @@ Handles energy usage monitoring and alerting including:
 
 **Port**: 8083
 
+### Alert Service
+Handles alert notifications including:
+- Consuming alert events from Kafka
+- Sending email notifications via SMTP
+- Tracking alert delivery status in MySQL
+
+**Port**: 8084
+
 ## Getting Started
 
 ### Prerequisites
@@ -137,6 +154,12 @@ cd usage-service
 ./mvnw spring-boot:run
 ```
 
+**Alert Service:**
+```bash
+cd alert-service
+./mvnw spring-boot:run
+```
+
 ### Database Migrations
 Database migrations are handled automatically by Flyway on application startup.
 
@@ -168,6 +191,12 @@ cd usage-service
 ./mvnw clean install
 ```
 
+**Alert Service:**
+```bash
+cd alert-service
+./mvnw clean install
+```
+
 ### Running Tests
 
 **User Service:**
@@ -191,6 +220,12 @@ cd ingestion-service
 **Usage Service:**
 ```bash
 cd usage-service
+./mvnw test
+```
+
+**Alert Service:**
+```bash
+cd alert-service
 ./mvnw test
 ```
 
