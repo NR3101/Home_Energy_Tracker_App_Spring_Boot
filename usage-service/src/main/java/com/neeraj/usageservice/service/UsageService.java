@@ -11,7 +11,9 @@ import com.neeraj.kafka.event.EnergyUsageEvent;
 import com.neeraj.usageservice.client.DeviceClient;
 import com.neeraj.usageservice.client.UserClient;
 import com.neeraj.usageservice.dto.DeviceDTO;
+import com.neeraj.usageservice.dto.UsageDTO;
 import com.neeraj.usageservice.dto.UserDTO;
+import com.neeraj.usageservice.model.Device;
 import com.neeraj.usageservice.model.DeviceWithEnergyUsageForUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,10 +24,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -58,7 +57,19 @@ public class UsageService {
         influxDBClient.getWriteApiBlocking().writePoint(influxDbBucket, influxDbOrg, point);
     }
 
-    // Scheduled cron job that runs every 10 seconds to check energy usage and send alerts if needed
+    /**
+     * Main method to aggregate device energy usage and send alerts when thresholds are exceeded.
+     * This is a scheduled job that runs every 10 seconds to monitor energy consumption.
+     * This method orchestrates the following steps:
+     * 1. Fetch energy usage data from InfluxDB for all devices in the last hour
+     * 2. Enrich device data with user information by calling device-service
+     * 3. Group devices by their userId to calculate total energy per user
+     * 4. Fetch user details (email, alert threshold) from user-service
+     * 5. Check each user's total energy usage against their threshold and send alerts if exceeded
+     *
+     * This automated monitoring ensures users are notified in near real-time when their
+     * energy consumption exceeds their configured alert thresholds.
+     */
     @Scheduled(cron = "*/10 * * * * *")
     public void aggregateDeviceEnergyUsage() {
         // Step 1: Fetch energy usage data from InfluxDB for all devices in the last hour
@@ -169,9 +180,9 @@ public class UsageService {
      * Fetches user details (energy threshold and email) from user-service for all users.
      * Only includes users who have alerts enabled.
      *
-     * @param userIds Set of user IDs to fetch details for
+     * @param userIds                 Set of user IDs to fetch details for
      * @param userEnergyThresholdsMap Map to populate with userId -> threshold
-     * @param userEmailMap Map to populate with userId -> email
+     * @param userEmailMap            Map to populate with userId -> email
      */
     private void fetchUserThresholdsAndEmails(
             java.util.Set<Long> userIds,
@@ -205,8 +216,8 @@ public class UsageService {
      * Sends an alert via Kafka if the threshold is exceeded.
      *
      * @param userDeviceEnergiesUsageMap Map of userId to their devices with energy usage
-     * @param userEnergyThresholdsMap Map of userId to their energy alert threshold
-     * @param userEmailMap Map of userId to their email address
+     * @param userEnergyThresholdsMap    Map of userId to their energy alert threshold
+     * @param userEmailMap               Map of userId to their email address
      */
     private void checkThresholdsAndSendAlerts(
             Map<Long, List<DeviceWithEnergyUsageForUser>> userDeviceEnergiesUsageMap,
@@ -244,5 +255,243 @@ public class UsageService {
                         userId, totalEnergyUsage, threshold);
             }
         }
+    }
+
+    /**
+     * Main method to get energy usage data for a specific user over a specified number of days.
+     * This method orchestrates the following steps:
+     * 1. Fetch all devices owned by the user
+     * 2. Query InfluxDB for aggregated energy usage per device
+     * 3. Combine device information with their energy consumption data
+     * 4. Return a complete usage report
+     *
+     * @param userId The ID of the user to fetch usage data for
+     * @param days   Number of days to look back for energy usage data
+     * @return UsageDTO containing user ID and list of devices with their energy consumption
+     */
+    public UsageDTO getXDaysUsageForUser(Long userId, int days) {
+        log.info("Getting usage for userId {} over past {} days", userId, days);
+
+        // Step 1: Fetch all devices owned by the user from device-service
+        List<Device> devices = fetchAndConvertUserDevices(userId);
+
+        // If user has no devices, return early with empty result
+        if (devices.isEmpty()) {
+            log.warn("No devices found for userId: {}", userId);
+            return buildEmptyUsageDTO(userId);
+        }
+
+        // Step 2: Query InfluxDB to get aggregated energy consumption for each device
+        Map<Long, Double> deviceEnergyMap = queryDeviceEnergyUsage(devices, days);
+
+        // Step 3: Populate each device with its energy consumption from InfluxDB results
+        populateDevicesWithEnergyData(devices, deviceEnergyMap);
+
+        // Step 4: Convert devices to DTOs and build the final response
+        return buildUsageDTO(userId, devices);
+    }
+
+    /**
+     * Fetches all devices for a user from device-service and converts them to Device entities.
+     * Filters out any devices with null IDs.
+     *
+     * @param userId The ID of the user whose devices to fetch
+     * @return List of Device entities owned by the user
+     */
+    private List<Device> fetchAndConvertUserDevices(Long userId) {
+        // Call device-service to get all devices for this user
+        final List<DeviceDTO> devicesDto = deviceClient.getAllDevicesForUser(userId);
+
+        // Convert DeviceDTO objects to Device entities for internal processing
+        final List<Device> devices = new ArrayList<>();
+        for (DeviceDTO deviceDto : devicesDto) {
+            // Skip devices without valid IDs
+            if (deviceDto.id() == null) {
+                log.warn("Skipping device with null ID for userId: {}", userId);
+                continue;
+            }
+
+            devices.add(Device.builder()
+                    .id(deviceDto.id())
+                    .name(deviceDto.name())
+                    .type(deviceDto.type())
+                    .location(deviceDto.location())
+                    .userId(deviceDto.userId())
+                    .build());
+        }
+
+        return devices;
+    }
+
+    /**
+     * Queries InfluxDB to get aggregated energy consumption for each device over the specified time period.
+     * Builds a Flux query that filters by device IDs and sums energy usage within the time range.
+     *
+     * @param devices List of devices to query energy data for
+     * @param days    Number of days to look back
+     * @return Map of deviceId to total energy consumed (in kWh)
+     */
+    private Map<Long, Double> queryDeviceEnergyUsage(List<Device> devices, int days) {
+        // Calculate the time range for the query
+        final Instant now = Instant.now();
+        final Instant start = now.minusSeconds((long) days * 24 * 3600);
+
+        // Build the Flux query to fetch energy data from InfluxDB
+        String fluxQuery = buildFluxQueryForDevices(devices, start, now);
+
+        // Execute the query and parse results into a map
+        return executeFluxQueryAndAggregateResults(fluxQuery, devices.size());
+    }
+
+    /**
+     * Builds a Flux query string to fetch energy usage data for specific devices within a time range.
+     * The query filters by measurement name, field name, and device IDs, then groups and sums by device.
+     *
+     * @param devices List of devices to include in the query
+     * @param start   Start time for the query range
+     * @param now     End time for the query range
+     * @return Formatted Flux query string ready to execute
+     */
+    private String buildFluxQueryForDevices(List<Device> devices, Instant start, Instant now) {
+        // Extract device IDs and convert to strings for use in Flux query
+        List<String> deviceIdStrings = devices.stream()
+                .map(Device::getId)
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .toList();
+
+        // Build device filter: r["deviceId"] == "1" or r["deviceId"] == "2" or ...
+        final String deviceFilter = deviceIdStrings.stream()
+                .map(idStr -> String.format("r[\"deviceId\"] == \"%s\"", idStr))
+                .collect(Collectors.joining(" or "));
+
+        // Construct the complete Flux query
+        // This query:
+        // 1. Selects data from the specified bucket
+        // 2. Filters by time range (start to now)
+        // 3. Filters for "energy_usage" measurement and "energyUsage" field
+        // 4. Filters for specific device IDs
+        // 5. Groups by deviceId and sums the energy values
+        return String.format("""
+                from(bucket: "%s")
+                  |> range(start: time(v: "%s"), stop: time(v: "%s"))
+                  |> filter(fn: (r) => r["_measurement"] == "energy_usage")
+                  |> filter(fn: (r) => r["_field"] == "energyUsage")
+                  |> filter(fn: (r) => %s)
+                  |> group(columns: ["deviceId"])
+                  |> sum(column: "_value")
+                """, influxDbBucket, start.toString(), now.toString(), deviceFilter);
+    }
+
+    /**
+     * Executes the Flux query against InfluxDB and parses the results into a map.
+     * Each FluxRecord contains a deviceId and aggregated energy value.
+     *
+     * @param fluxQuery    The Flux query to execute
+     * @param deviceCount  Number of devices being queried (for logging)
+     * @return Map of deviceId to total energy consumed
+     */
+    private Map<Long, Double> executeFluxQueryAndAggregateResults(String fluxQuery, int deviceCount) {
+        final Map<Long, Double> aggregatedMap = new HashMap<>();
+
+        try {
+            // Execute the Flux query
+            QueryApi queryApi = influxDBClient.getQueryApi();
+            List<FluxTable> tables = queryApi.query(fluxQuery, influxDbOrg);
+
+            // Parse each table and record to extract deviceId and energy values
+            for (FluxTable table : tables) {
+                for (FluxRecord record : table.getRecords()) {
+                    // Extract deviceId from the record
+                    Object deviceIdObj = record.getValueByKey("deviceId");
+                    String deviceIdStr = deviceIdObj == null ? null : deviceIdObj.toString();
+                    if (deviceIdStr == null) {
+                        log.warn("Found record with null deviceId, skipping");
+                        continue;
+                    }
+
+                    // Extract energy value from the record
+                    Double energyConsumed = record.getValueByKey("_value") instanceof Number
+                            ? ((Number) record.getValueByKey("_value")).doubleValue()
+                            : 0.0;
+
+                    try {
+                        // Store the aggregated energy for this device
+                        Long deviceId = Long.valueOf(deviceIdStr);
+                        aggregatedMap.put(deviceId, aggregatedMap.getOrDefault(deviceId, 0.0) + energyConsumed);
+                    } catch (NumberFormatException nfe) {
+                        log.warn("Failed to parse deviceId from flux record: {}", deviceIdStr, nfe);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to query InfluxDB: {}", e.getMessage(), e);
+            // Return empty map on error - devices will get 0.0 energy by default
+        }
+
+        return aggregatedMap;
+    }
+
+    /**
+     * Populates each device with its energy consumption data from the aggregated map.
+     * Devices not found in the map will have their energy set to 0.0.
+     *
+     * @param devices         List of devices to populate
+     * @param deviceEnergyMap Map of deviceId to energy consumption
+     */
+    private void populateDevicesWithEnergyData(List<Device> devices, Map<Long, Double> deviceEnergyMap) {
+        // Set energy consumed for each device from the aggregated results
+        for (Device device : devices) {
+            if (device == null || device.getId() == null) {
+                log.warn("Skipping null device or device with null ID");
+                continue;
+            }
+
+            // Get energy from map, default to 0.0 if device has no usage data
+            Double energyConsumed = deviceEnergyMap.getOrDefault(device.getId(), 0.0);
+            device.setEnergyConsumed(energyConsumed);
+        }
+    }
+
+    /**
+     * Builds the final UsageDTO response containing user ID and devices with their energy data.
+     * Converts Device entities back to DeviceDTO for the API response.
+     *
+     * @param userId  The user ID
+     * @param devices List of devices with populated energy data
+     * @return UsageDTO ready to be returned to the client
+     */
+    private UsageDTO buildUsageDTO(Long userId, List<Device> devices) {
+        // Convert Device entities to DeviceDTO objects for the API response
+        final List<DeviceDTO> resultDevices = devices.stream()
+                .map(d -> DeviceDTO.builder()
+                        .id(d.getId())
+                        .name(d.getName())
+                        .type(d.getType())
+                        .location(d.getLocation())
+                        .userId(d.getUserId())
+                        .energyConsumed(d.getEnergyConsumed())
+                        .build())
+                .toList();
+
+
+        // Build and return the final UsageDTO
+        return UsageDTO.builder()
+                .userId(userId)
+                .devices(resultDevices)
+                .build();
+    }
+
+    /**
+     * Builds an empty UsageDTO when a user has no devices.
+     *
+     * @param userId The user ID
+     * @return UsageDTO with empty device list
+     */
+    private UsageDTO buildEmptyUsageDTO(Long userId) {
+        return UsageDTO.builder()
+                .userId(userId)
+                .devices(List.of())
+                .build();
     }
 }

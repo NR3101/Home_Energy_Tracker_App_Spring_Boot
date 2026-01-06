@@ -12,16 +12,19 @@ This is a microservices architecture project consisting of:
 - **ingestion-service**: Energy usage data ingestion service
 - **usage-service**: Energy usage monitoring and alerting service
 - **alert-service**: Alert notification service
+- **insight-service**: AI-powered energy insights and recommendations service
 
 ## Tech Stack
 - Java 25
 - Spring Boot 4.0.0
 - Spring Data JPA
 - Spring Mail
+- Spring AI (Ollama integration)
 - Flyway (Database Migration)
 - MySQL
 - Apache Kafka
 - InfluxDB
+- Ollama (Local LLM)
 - Docker & Docker Compose
 - Maven
 - Lombok
@@ -62,6 +65,13 @@ This is a microservices architecture project consisting of:
 │   │   └── test/
 │   └── pom.xml
 ├── alert-service/         # Alert notification microservice
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/
+│   │   │   └── resources/
+│   │   └── test/
+│   └── pom.xml
+├── insight-service/       # AI-powered insights microservice
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/
@@ -116,6 +126,15 @@ Handles alert notifications including:
 
 **Port**: 8084
 
+### Insight Service
+Provides AI-powered energy insights and recommendations including:
+- Generating personalized energy-saving tips using local LLM
+- Analyzing device-level energy consumption patterns
+- Providing comprehensive energy usage overviews
+- Integration with Ollama for natural language insights
+
+**Port**: 8085
+
 ## Getting Started
 
 ### Prerequisites
@@ -160,6 +179,12 @@ cd alert-service
 ./mvnw spring-boot:run
 ```
 
+**Insight Service:**
+```bash
+cd insight-service
+./mvnw spring-boot:run
+```
+
 ### Database Migrations
 Database migrations are handled automatically by Flyway on application startup.
 
@@ -197,6 +222,12 @@ cd alert-service
 ./mvnw clean install
 ```
 
+**Insight Service:**
+```bash
+cd insight-service
+./mvnw clean install
+```
+
 ### Running Tests
 
 **User Service:**
@@ -226,6 +257,12 @@ cd usage-service
 **Alert Service:**
 ```bash
 cd alert-service
+./mvnw test
+```
+
+**Insight Service:**
+```bash
+cd insight-service
 ./mvnw test
 ```
 

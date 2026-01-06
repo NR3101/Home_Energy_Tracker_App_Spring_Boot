@@ -1,5 +1,4 @@
-package com.neeraj.usageservice.dto;
-
+package com.neeraj.insightservice.dto;
 
 import lombok.Builder;
 
@@ -9,7 +8,6 @@ public record DeviceDTO(
         String name,
         String type,
         String location,
-        Long userId,
         Double energyConsumed
 ) {
 }
