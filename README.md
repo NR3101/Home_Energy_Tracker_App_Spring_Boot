@@ -7,6 +7,7 @@ A microservice-based application for tracking home energy usage.
 
 ## Architecture
 This is a microservices architecture project consisting of:
+- **api-gateway**: Central entry point that routes API requests to backend services
 - **user-service**: User management service
 - **device-service**: Device management service
 - **ingestion-service**: Energy usage data ingestion service
@@ -33,7 +34,14 @@ This is a microservices architecture project consisting of:
 ## Project Structure
 ```
 .
-├── docker/                 # Docker configuration files
+├── api-gateway/           # API gateway microservice
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/
+│   │   │   └── resources/
+│   │   └── test/
+│   └── pom.xml
+├── docker/                # Docker configuration files
 │   ├── mysql/             # MySQL initialization scripts
 │   └── kafka_data/        # Kafka data storage
 ├── user-service/          # User management microservice
@@ -82,6 +90,15 @@ This is a microservices architecture project consisting of:
 ```
 
 ## Services
+
+### API Gateway
+Routes external API calls to backend services:
+- `/api/v1/user/**` -> `http://localhost:8080`
+- `/api/v1/device/**` -> `http://localhost:8081`
+- `/api/v1/ingestion/**` -> `http://localhost:8082`
+- `/api/v1/insight/**` -> `http://localhost:8085`
+
+**Port**: 9000
 
 ### User Service
 Handles user management operations including:
@@ -149,6 +166,12 @@ docker-compose up -d
 
 ### Running Services Locally
 
+**API Gateway:**
+```bash
+cd api-gateway
+./mvnw spring-boot:run
+```
+
 **User Service:**
 ```bash
 cd user-service
@@ -192,6 +215,12 @@ Database migrations are handled automatically by Flyway on application startup.
 
 ### Building the Project
 
+**API Gateway:**
+```bash
+cd api-gateway
+./mvnw clean install
+```
+
 **User Service:**
 ```bash
 cd user-service
@@ -229,6 +258,12 @@ cd insight-service
 ```
 
 ### Running Tests
+
+**API Gateway:**
+```bash
+cd api-gateway
+./mvnw test
+```
 
 **User Service:**
 ```bash

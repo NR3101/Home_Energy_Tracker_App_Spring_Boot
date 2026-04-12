@@ -13,5 +13,8 @@ public enum DeviceType {
     REFRIGERATOR,
     MICROWAVE,
     THERMOSTAT,
+    WASHING_MACHINE,
+    AIR_PURIFIER,
+    DESKTOP,
     OTHER
 }
