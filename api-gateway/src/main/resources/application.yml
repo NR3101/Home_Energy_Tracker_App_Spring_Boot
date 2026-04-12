@@ -5,3 +5,31 @@ spring:
 
 server:
   port: 9000
+
+
+# Resilience4j configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true # Enable health indicator for circuit breakers in Actuator
+        sliding-window-type: count-based # Use count-based sliding window i.e., count the number of calls
+        sliding-window-size: 10 # Number of calls to consider for calculating the failure rate
+        failure-rate-threshold: 20 # Percentage of failures to open the circuit
+        minimum-number-of-calls: 4 # Minimum number of calls before calculating the failure rate
+        wait-duration-in-open-state: 5s # Time to wait before transitioning from open to half-open state
+        permitted-number-of-calls-in-half-open-state: 2 # Number of calls allowed in half-open state before deciding to close or open the circuit
+        automatic-transition-from-open-to-half-open-enabled: true # Automatically transition from open to half-open state after the wait duration
+
+# Actuator configuration
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers
