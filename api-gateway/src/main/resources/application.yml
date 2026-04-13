@@ -36,7 +36,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,circuitbreakers
+        include: health,info,metrics,circuitbreakers,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 # Keycloak configuration
 keycloak:
