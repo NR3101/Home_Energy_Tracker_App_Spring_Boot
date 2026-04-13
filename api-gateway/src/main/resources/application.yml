@@ -46,4 +46,17 @@ keycloak:
 # Security configuration
 security:
   excluded:
-    urls: /actuator/**, /v3/api-docs/**, /swagger-ui/**, /swagger-ui.html
+    urls: /actuator/**, /v3/api-docs/**, /swagger-ui/**, /swagger-ui.html, /docs/**, /swagger-resources/**, /api-docs/**, /webjars/**, /favicon.ico
+
+# OpenAPI configuration
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls[0]:
+      name: User Service
+      url: /docs/user-service/v3/api-docs
+    urls[1]:
+      name: Device Service
+      url: /docs/device-service/v3/api-docs
+  api-docs:
+    path: /v3/api-docs

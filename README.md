@@ -19,6 +19,7 @@ This is a microservices architecture project consisting of:
 - Java 25
 - Spring Boot 4.0.0
 - Spring Security (OAuth2 Resource Server)
+- SpringDoc OpenAPI (Swagger UI)
 - Spring Data JPA
 - Spring Mail
 - Spring AI (Ollama integration)
@@ -94,6 +95,11 @@ Routes external API calls to backend services:
 - `/api/v1/insight/**` -> `http://localhost:8085`
 
 Also handles JWT authentication using Keycloak for protected routes.
+Also exposes aggregated Swagger UI and proxied service docs for user and device services.
+
+- Swagger UI: `/swagger-ui.html`
+- User Service docs via gateway: `/docs/user-service/v3/api-docs`
+- Device Service docs via gateway: `/docs/device-service/v3/api-docs`
 
 **Port**: 9000
 
@@ -103,6 +109,7 @@ Handles user management operations including:
 - User profile management
 - User authentication data
 - Email validation
+- OpenAPI docs support (SpringDoc)
 
 **Port**: 8080
 
@@ -111,6 +118,7 @@ Handles device management operations including:
 - Device registration
 - Device profile management (name, type, location)
 - Device association with users
+- OpenAPI docs support (SpringDoc)
 
 **Port**: 8081
 
@@ -257,7 +265,11 @@ cd insight-service
 
 
 ## API Documentation
-API documentation will be available once Swagger/OpenAPI is integrated.
+Available now for implemented services:
+
+- API Gateway Swagger UI: `http://localhost:9000/swagger-ui.html`
+- User Service docs (via gateway): `http://localhost:9000/docs/user-service/v3/api-docs`
+- Device Service docs (via gateway): `http://localhost:9000/docs/device-service/v3/api-docs`
 
 ## Contributing
 This is a personal project currently in development.

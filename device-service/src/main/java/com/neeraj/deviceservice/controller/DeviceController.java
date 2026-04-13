@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/device")
+@CrossOrigin(origins = "http://localhost:9000")
 @RequiredArgsConstructor
 public class DeviceController {
 
