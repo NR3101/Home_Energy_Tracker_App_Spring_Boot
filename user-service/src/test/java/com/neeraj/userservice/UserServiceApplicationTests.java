@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 @Slf4j
+@Disabled // Disable this test class to prevent accidental execution of user creation during regular test runs
 class UserServiceApplicationTests {
 
     @Autowired
