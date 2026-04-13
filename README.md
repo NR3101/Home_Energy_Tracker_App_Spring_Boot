@@ -18,10 +18,12 @@ This is a microservices architecture project consisting of:
 ## Tech Stack
 - Java 25
 - Spring Boot 4.0.0
+- Spring Security (OAuth2 Resource Server)
 - Spring Data JPA
 - Spring Mail
 - Spring AI (Ollama integration)
 - Flyway (Database Migration)
+- Keycloak
 - MySQL
 - Apache Kafka
 - InfluxDB
@@ -36,55 +38,48 @@ This is a microservices architecture project consisting of:
 .
 ├── api-gateway/           # API gateway microservice
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   └── resources/
-│   │   └── test/
+│   │   └── main/
+│   │       ├── java/
+│   │       └── resources/
 │   └── pom.xml
 ├── docker/                # Docker configuration files
 │   ├── mysql/             # MySQL initialization scripts
 │   └── kafka_data/        # Kafka data storage
 ├── user-service/          # User management microservice
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   └── resources/
-│   │   └── test/
+│   │   └── main/
+│   │       ├── java/
+│   │       └── resources/
 │   └── pom.xml
 ├── device-service/        # Device management microservice
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   └── resources/
-│   │   └── test/
+│   │   └── main/
+│   │       ├── java/
+│   │       └── resources/
 │   └── pom.xml
 ├── ingestion-service/     # Energy data ingestion microservice
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   └── resources/
-│   │   └── test/
+│   │   └── main/
+│   │       ├── java/
+│   │       └── resources/
 │   └── pom.xml
 ├── usage-service/         # Energy usage monitoring and alerting microservice
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   └── resources/
-│   │   └── test/
+│   │   └── main/
+│   │       ├── java/
+│   │       └── resources/
 │   └── pom.xml
 ├── alert-service/         # Alert notification microservice
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   └── resources/
-│   │   └── test/
+│   │   └── main/
+│   │       ├── java/
+│   │       └── resources/
 │   └── pom.xml
 ├── insight-service/       # AI-powered insights microservice
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   └── resources/
-│   │   └── test/
+│   │   └── main/
+│   │       ├── java/
+│   │       └── resources/
 │   └── pom.xml
 └── docker-compose.yml     # Docker Compose configuration
 ```
@@ -97,6 +92,8 @@ Routes external API calls to backend services:
 - `/api/v1/device/**` -> `http://localhost:8081`
 - `/api/v1/ingestion/**` -> `http://localhost:8082`
 - `/api/v1/insight/**` -> `http://localhost:8085`
+
+Also handles JWT authentication using Keycloak for protected routes.
 
 **Port**: 9000
 
@@ -121,7 +118,6 @@ Handles device management operations including:
 Handles energy usage data ingestion operations including:
 - Energy usage data ingestion via REST API
 - Data publishing to Kafka
-- Parallel data simulation for testing
 
 **Port**: 8082
 
@@ -163,6 +159,8 @@ Provides AI-powered energy insights and recommendations including:
 ```bash
 docker-compose up -d
 ```
+
+This starts MySQL, Kafka, Kafka UI, InfluxDB, Mailpit, Keycloak, and Keycloak MySQL.
 
 ### Running Services Locally
 
@@ -257,49 +255,6 @@ cd insight-service
 ./mvnw clean install
 ```
 
-### Running Tests
-
-**API Gateway:**
-```bash
-cd api-gateway
-./mvnw test
-```
-
-**User Service:**
-```bash
-cd user-service
-./mvnw test
-```
-
-**Device Service:**
-```bash
-cd device-service
-./mvnw test
-```
-
-**Ingestion Service:**
-```bash
-cd ingestion-service
-./mvnw test
-```
-
-**Usage Service:**
-```bash
-cd usage-service
-./mvnw test
-```
-
-**Alert Service:**
-```bash
-cd alert-service
-./mvnw test
-```
-
-**Insight Service:**
-```bash
-cd insight-service
-./mvnw test
-```
 
 ## API Documentation
 API documentation will be available once Swagger/OpenAPI is integrated.

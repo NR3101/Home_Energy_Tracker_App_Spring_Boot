@@ -109,6 +109,7 @@ influxdb_data/
 
 # Docker volumes (if any local data)
 docker/mysql/data/
+volume-data/
 
 # Logs
 logs/

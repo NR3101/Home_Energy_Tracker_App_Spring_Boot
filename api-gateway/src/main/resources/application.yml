@@ -1,7 +1,11 @@
 spring:
   application:
     name: api-gateway
-
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8091/realms/het-security-realm
 
 server:
   port: 9000
@@ -33,3 +37,13 @@ management:
     web:
       exposure:
         include: health,info,metrics,circuitbreakers
+
+# Keycloak configuration
+keycloak:
+  auth:
+    jwk-set-uri: http://localhost:8091/realms/het-security-realm/protocol/openid-connect/certs
+
+# Security configuration
+security:
+  excluded:
+    urls: /actuator/**, /v3/api-docs/**, /swagger-ui/**, /swagger-ui.html
